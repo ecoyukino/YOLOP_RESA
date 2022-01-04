@@ -28,7 +28,8 @@ def split_path(path):
 class Tusimple(nn.Module):
     def __init__(self, cfg):
         super(Tusimple, self).__init__()
-        self.cfg = cfg 
+        self.cfg = cfg
+        print("cfg = ",cfg) 
         exp_dir = os.path.join(self.cfg.work_dir, "output")
         if not os.path.exists(exp_dir):
             os.mkdir(exp_dir)
@@ -89,12 +90,15 @@ class Tusimple(nn.Module):
                 new_img_name = img_name[b].replace('/', '_')
                 save_dir = os.path.join(self.view_dir, new_img_name)
                 dataset.view(img, lane_coords, save_dir)
-    def demo_pred(self, path,seg_pred,exist_pred, batch):
+    def demo_pred(self, path,seg_pred,exist_pred, batch, ori_img = 0):
         #print("demo_pred")
-        img_path = batch['meta']
-        img_path = img_path.replace("\\","/")
+        try:
+            img_path = batch['meta']
+            img_path = img_path.replace("\\","/")
         #print("img_path = ",img_path)
-        img_name = img_path.split('/')[-1]
+            img_name = img_path.split('/')[-1]
+        except :
+            pass
         #print("img_name = ",img_name)
         for b in range(len(seg_pred)):
             #print("seg.shape = ",seg_pred.shape)
@@ -145,10 +149,15 @@ class Tusimple(nn.Module):
             """
             
             #print("img_path = ",img_path)
-            img = cv2.imread(img_path)
-            #new_img_name = img_name[b].replace('/', '_')
-            save_dir = "./inference/ResaNet_output_vx3/"
-            demo_data.view(img, lane_coords, img_path, save_dir)
+            if type(ori_img) == type(int(0)):
+                img = cv2.imread(img_path)
+                new_img_name = img_name[b].replace('/', '_')
+                save_dir = "./inference/ResaNet_output_vx3/"
+                demo_data.view(img, lane_coords, img_path)
+            else:
+                img = ori_img
+                img = demo_data.view(img, lane_coords, img)
+                return img
     def evaluate(self, dataset, output, batch):
         seg_pred, exist_pred = output['seg'], output['exist']
         seg_pred = F.softmax(seg_pred, dim=1)
@@ -156,14 +165,17 @@ class Tusimple(nn.Module):
         seg_pred = seg_pred.detach().cpu().numpy()
         exist_pred = exist_pred.detach().cpu().numpy()
         self.evaluate_pred(dataset, seg_pred, exist_pred, batch)
-    def demo(self,path, output, batch):
+    def demo(self,path, output, batch,ori_image = 0):
         seg_pred, exist_pred = output['seg'], output['exist']
         seg_pred = F.softmax(seg_pred, dim=1)
         
         seg_pred = seg_pred.detach().cpu().numpy()
         exist_pred = exist_pred.detach().cpu().numpy()
-        self.demo_pred(path,seg_pred,exist_pred, batch)
-
+        if type(ori_image) == type(int(0)) :
+            self.demo_pred(path,seg_pred,exist_pred, batch)
+        else:
+            img = self.demo_pred(path,seg_pred,exist_pred, batch, ori_img = ori_image)
+            return img
     def summarize(self):
         best_acc = 0
         output_file = os.path.join(self.out_path, 'predict_test.json')
@@ -301,7 +313,7 @@ class TuSimple_Demo():
         #print(coordinates)
         #print("prp3")
         return coordinates
-    def view(self, img, coords,image_path, file_path=None):
+    def view(self, img, coords,image_path = 0):
         #print("view...")
         #1 verify where we are driving the car, find the two lanes 
         center_x = 1280/2
@@ -410,8 +422,7 @@ class TuSimple_Demo():
         h_sample = [160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710]
         cv2.arrowedLine(img,(int(arr_end_x),h_sample[arr_end]),(int(arr_start_x),h_sample[arr_start]),(255,255,255),3)
 
-        image_name = image_path.split('/')[-1]
-        img_save_name = os.path.join(file_path, image_name)
+        
         #print("save dir = ",img_save_name)
 
         """
@@ -421,7 +432,9 @@ class TuSimple_Demo():
             print("save dir = ",img_save_name)
         """
         #print(img_save_name)
-        cv2.imwrite(img_save_name, img)
+        if type(image_path) == type("string"):
+            cv2.imwrite(image_path,img)
+        return img
     def sort_key(self, coords):
         
         for i in range(56):

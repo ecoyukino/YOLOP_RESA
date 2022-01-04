@@ -308,7 +308,7 @@ def main():
 
         cudnn.benchmark = True
         cudnn.fastest = True
-        print(train)
+        
         runner = Runner(cfg_resa,model)
 
         if args.validate:
