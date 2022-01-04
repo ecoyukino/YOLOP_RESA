@@ -314,17 +314,24 @@ class TuSimple_Demo():
         #print("prp3")
         return coordinates
     def view(self, img, coords,image_path = 0):
-        #print("view...")
-        #1 verify where we are driving the car, find the two lanes 
+        """
+        img：原本的圖片
+        coords 是預測出來的線條，他的格式和tusimple的lanes一樣
+        """
+
+
+
         center_x = 1280/2
         leftlane_starndar = 1280/2
         coord_index = 0
-        #record = [[] for i in range(len(coords))]
-        left = [] # [lane_index(int),lane(list)]
-        right = [] # [lane_index(int),lane(list)]
-        #print(len(coords[0]))
+        
         coords = self.sort_key(coords)
+
+
         #print("coords.len = ",len(coords))
+        """
+        這邊辨識哪兩條車道線屬於行駛中的車道
+        """
         for coord in coords:
             total_pt_number = 0
             x_Sum = 0
@@ -337,30 +344,28 @@ class TuSimple_Demo():
             else:
                 break
         #print("LeftRight")
-        if len(coords)==0: # no lane
-            cv2.putText(
-                        img, "no line detected", (640,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,0,0),1, cv2.LINE_AA
-                        )
+        
+        """
+        left所記錄的是車子行駛中的車道的左側車道線 right則是行駛車道中的右側車道線
+        紀錄方法：[車道線編號,車道的點]
+        例如：[1, [[5, 160], [6, 170], [9, 180].......]]
+        這是為了畫中間的箭頭
+        """
+
+        left = [] # [lane_index(int),lane(list)]
+        right = [] # [lane_index(int),lane(list)]
+        if len(coords)==0: # 沒有車道線被偵測出
             left.append(-1)
             right.append(-1)
-        elif coord_index == 0: # no left lane
-            cv2.putText(
-                        img, "left", (640,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,0,0),1, cv2.LINE_AA
-                        )
+        elif coord_index == 0: # 左邊沒有車道線
             left.append(-1)
             right.append(0)
             right.append(coords[0])
-        elif coord_index == len(coords) and len(coords) != 0:# no right lane
-            cv2.putText(
-                        img, "right", (640,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,0,0),1, cv2.LINE_AA
-                        ) 
+        elif coord_index == len(coords) and len(coords) != 0:# 右邊沒有車道線
             right.append(-1)
             left.append(len(coords)-1)
             left.append(coords[-1])
-        else : # both left and right have lane
-            cv2.putText(
-                        img, "center", (640,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,0,0),1, cv2.LINE_AA
-                        ) 
+        else : # 左右都有車道線(只有這個才能畫箭頭)
             right.append(coord_index)
             right.append(coords[coord_index])
             left.append(coord_index-1)
@@ -373,8 +378,9 @@ class TuSimple_Demo():
         color_index = 0
         lane_index = 0
         
+        #這邊是畫點點或話線的地方
         for coord in coords:
-            if lane_index == left[0] or lane_index ==right[0]:
+            if lane_index == left[0] or lane_index ==right[0]:#如果這條線是車子行駛的車道 畫線 
                 drawline = False
                 for x, y in coord:
                     if x <= 0 or y <= 0:
@@ -391,7 +397,7 @@ class TuSimple_Demo():
                         x1 = x2
                         y1 = y2
                     i+=1
-            else:
+            else:#不是車子行駛的車道 畫圈圈
                 for x, y in coord:
                     if x <= 0 or y <= 0:
                         continue
@@ -400,6 +406,14 @@ class TuSimple_Demo():
             color_index += 1
             lane_index += 1
         
+        """
+        這裡是畫箭頭的程式，看你要不要順便把它改成彎曲的箭頭
+        right[1] = 車道線的座標們
+        right[1][i][0] = 第i個點的x座標
+        right[1][i][1] = 第i個點的y座標
+        第一個點的y座標是160 依序下去為170 180 ...跟H_sample一樣
+        left同理
+        """       
         y_sample = [i for i in range(56)]
         arr_start = 0
         arr_end = 0
@@ -418,12 +432,12 @@ class TuSimple_Demo():
         #print("arr_end",arr_end)
         arr_start_x = (right[1][arr_start][0]+left[1][arr_start][0])/2
         arr_end_x = (right[1][arr_end][0]+left[1][arr_end][0])/2
-
+        #arr_start_x是
         h_sample = [160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710]
         cv2.arrowedLine(img,(int(arr_end_x),h_sample[arr_end]),(int(arr_start_x),h_sample[arr_start]),(255,255,255),3)
 
+        #arr_end_x 是箭頭的最底下的部分的x座標 arr_start_x是箭頭尖端的x座標
         
-        #print("save dir = ",img_save_name)
 
         """
         if not os.path.exists(osp.dirname(file_path)):
@@ -431,10 +445,34 @@ class TuSimple_Demo():
             img_save_name = os.path.join(file_path, image_name)
             print("save dir = ",img_save_name)
         """
+        self.KeepCenter(left,right)#把你的程式碼加在這裡
+
+
         #print(img_save_name)
         if type(image_path) == type("string"):
             cv2.imwrite(image_path,img)
         return img
+    def KeepCenter(self,left,right):
+        """
+        你會用到的function(只須改中文的地方)
+
+        畫箭頭的程式碼
+        cv2.arrowedLine(img,(箭頭的尾端座標)),(箭頭的尖端座標),(255,255,255),3)
+        放字串的程式碼
+        cv2.
+        cv2.putText(
+            img, "你要放的字串", (640,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),1, cv2.LINE_AA
+            )
+        畫圈圈的程式碼(標示車子的中心點)
+        cv2.circle(img, (圓心座標), 4, (顏色), 2) 
+        
+        """
+
+        #把你的程式碼加在這裡
+
+
+        
+        pass    
     def sort_key(self, coords):
         
         for i in range(56):
