@@ -56,8 +56,8 @@ img_width = 640
 cut_height = 160
 seg_label = "seg_label"
 
-dataset_path = './data/vx1,2_labeled'
-test_json_file = './data/vx1,2_labeled/test_label.json'
+dataset_path = './data/6_8_11'
+test_json_file = './data/6_8_11/test_label.json'
 
 dataset = dict(
     train=dict(
