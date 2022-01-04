@@ -1,7 +1,11 @@
 YOLOP_RESA
 ===
 
-[Toc]
+
+
+[TOC]
+
+
 
 ### 1, Introduce
 -----
@@ -17,7 +21,7 @@ We use Instance Segmentaion as our main approach, We apply CNN to deal with our 
 ### 3, Training
 -----
 #### ▲Preparing
-Our Training data need to be labelled in the form of Tusimple Dataset and put it into, which means your dataset must consist of two part: your gt_image and json file.
+Our Training data need to be labelled in the form of Tusimple Dataset ,which means your dataset must consist of two part: your gt_image and json file.
 #### ▲Step 1
 With the labelled data, your need to put your dataset folder in ./data and create another three .json file -- test_label.json and valset.json
     
@@ -38,3 +42,8 @@ go to ./lib/config/resa_tusimple.py, find "dataset_path" and
 #### ▲Step 5 training
 Start training using following comment:
 > python tools/train.py --view --cpu 0 --load_from your/pretrained/weight/path
+
+
+### 4,testing
+> python tools/train.py --view -- validate --cpu 0 --load_from your/pretrained/weight/path
+---
