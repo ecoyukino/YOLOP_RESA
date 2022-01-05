@@ -10,6 +10,12 @@ import cv2
 
 from .lane import LaneEval
 
+import os.path as osp
+import numpy as np
+#import cv2
+import torchvision
+import lib.utils_resa.transforms as tf
+
 def split_path(path):
     """split path tree into list"""
     folders = []
@@ -190,11 +196,7 @@ class Tusimple(nn.Module):
         self.dump_to_json = []
         best_acc = max(acc, best_acc)
         return best_acc
-import os.path as osp
-import numpy as np
-import cv2
-import torchvision
-import lib.utils_resa.transforms as tf
+
 
 
 
@@ -413,6 +415,11 @@ class TuSimple_Demo():
         right[1][i][1] = 第i個點的y座標
         第一個點的y座標是160 依序下去為170 180 ...跟H_sample一樣
         left同理
+
+        看你要不要改這邊 這邊是車道上的箭頭
+
+        很醜
+
         """       
         y_sample = [i for i in range(56)]
         arr_start = 0
@@ -445,17 +452,19 @@ class TuSimple_Demo():
             img_save_name = os.path.join(file_path, image_name)
             print("save dir = ",img_save_name)
         """
-        self.KeepCenter(left,right)#把你的程式碼加在這裡
+        img = self.KeepCenter(img,left,right)#把你的程式碼加在這裡
 
 
         #print(img_save_name)
         if type(image_path) == type("string"):
             cv2.imwrite(image_path,img)
         return img
-    def KeepCenter(self,left,right):
+    def KeepCenter(self,img,left,right):
         """
         你會用到的function(只須改中文的地方)
-
+        right[1] = 車道線的座標們
+        right[1][i][0] = 第i個點的x座標
+        right[1][i][1] = 第i個點的y座標
         畫箭頭的程式碼
         cv2.arrowedLine(img,(箭頭的尾端座標)),(箭頭的尖端座標),(255,255,255),3)
         放字串的程式碼
@@ -465,14 +474,55 @@ class TuSimple_Demo():
             )
         畫圈圈的程式碼(標示車子的中心點)
         cv2.circle(img, (圓心座標), 4, (顏色), 2) 
-        
+        改完後
+        $git bash:
+        $git add  lib/runner/evaluator/tusimple/tusimple.py
+        $git commit -m "KeepCenter_Complete"
+        then
+        $git push
+        然後再發pull request給我
+        就降
+        got it?
+
+        cmd不認識git指令 我好想在學長的vscode上裝git的plugin
         """
-
-        #把你的程式碼加在這裡
-
-
         
-        pass    
+        #把你的程式碼加在這裡
+        center_coor = int(1280/2-1)
+        img = cv2.circle(img, (center_coor,720-10), 4, (0,0,255), -2)
+        if right[0] == -1 or left[0]==-1:  
+            return img
+        
+        right = np.array(right[1])
+        left = np.array(left[1])
+        
+        idx_r = np.where(right[:,0]>-1)[0][-1]
+        idx_l = np.where(left[:,0]>-1)[0][-1]
+        if idx_r > idx_l:
+            idx_r = idx_l
+        else:
+            idx_l = idx_r
+        lane_center  = right[idx_r,0] +  left[idx_l,0]
+        
+        lane_center = lane_center//2
+        if lane_center - center_coor > 10:
+            flag = 'KeepRight'
+        elif lane_center - center_coor < -10:
+            flag = 'KeepLeft'
+        else:
+            flag = 'In the center'
+
+        if flag is 'KeepRight':
+            cv2.arrowedLine(img,(10,30),(70,30),(255,255,255),3,tipLength=0.5)
+        elif flag is 'KeepLeft':
+            cv2.arrowedLine(img,(70,30),(10,30),(255,255,255),3,tipLength=0.5)
+        else:
+            img = cv2.circle(img, (40,30), 25, (255,255,255), 2)
+        cv2.putText(img, flag, (center_coor-100,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),1, cv2.LINE_AA)
+        #cv2.imshow('img',img)
+        #cv2.waitKey(1)
+
+        return img    
     def sort_key(self, coords):
         
         for i in range(56):
