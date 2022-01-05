@@ -322,7 +322,7 @@ class TuSimple_Demo():
         """
 
 
-
+        coords = self.SelfCorrection(coords)
         center_x = 1280/2
         leftlane_starndar = 1280/2
         coord_index = 0
@@ -421,6 +421,7 @@ class TuSimple_Demo():
         很醜
 
         """       
+        h_sample = [160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710]
         y_sample = [i for i in range(56)]
         arr_start = 0
         arr_end = 0
@@ -436,13 +437,20 @@ class TuSimple_Demo():
             if left[1][i][0] >0 and right[1][i][0] >0 :
                 arr_end = i
                 break
+        if h_sample[arr_end]>650:
+            arr_end = h_sample.index(650)
+        if h_sample[arr_start]<200:
+            arr_start = h_sample.index(250)
         #print("arr_end",arr_end)
         arr_start_x = (right[1][arr_start][0]+left[1][arr_start][0])/2
         arr_end_x = (right[1][arr_end][0]+left[1][arr_end][0])/2
         #arr_start_x是
-        h_sample = [160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710]
+    
         cv2.arrowedLine(img,(int(arr_end_x),h_sample[arr_end]),(int(arr_start_x),h_sample[arr_start]),(255,255,255),3)
-
+        #車道中間點
+        #箭頭尾端
+        arr_end_coor = (int(arr_end_x),h_sample[arr_end])
+        cv2.circle(img,arr_end_coor,4,(255,0,0),-2)
         #arr_end_x 是箭頭的最底下的部分的x座標 arr_start_x是箭頭尖端的x座標
         
 
@@ -452,47 +460,44 @@ class TuSimple_Demo():
             img_save_name = os.path.join(file_path, image_name)
             print("save dir = ",img_save_name)
         """
-        img = self.KeepCenter(img,left,right)#把你的程式碼加在這裡
+        
+        img = self.KeepCenter(img,left,right,arr_end_coor)#把你的程式碼加在這裡
 
 
         #print(img_save_name)
         if type(image_path) == type("string"):
             cv2.imwrite(image_path,img)
         return img
-    def KeepCenter(self,img,left,right):
+    def SelfCorrection(self,coords):
         """
-        你會用到的function(只須改中文的地方)
-        right[1] = 車道線的座標們
-        right[1][i][0] = 第i個點的x座標
-        right[1][i][1] = 第i個點的y座標
-        畫箭頭的程式碼
-        cv2.arrowedLine(img,(箭頭的尾端座標)),(箭頭的尖端座標),(255,255,255),3)
-        放字串的程式碼
-        cv2.
-        cv2.putText(
-            img, "你要放的字串", (640,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(255,255,255),1, cv2.LINE_AA
-            )
-        畫圈圈的程式碼(標示車子的中心點)
-        cv2.circle(img, (圓心座標), 4, (顏色), 2) 
-        改完後
-        $git bash:
-        $git add  lib/runner/evaluator/tusimple/tusimple.py
-        $git commit -m "KeepCenter_Complete"
-        then
-        $git push
-        然後再發pull request給我
-        就降
-        got it?
-
-        cmd不認識git指令 我好想在學長的vscode上裝git的plugin
+        Arguments:
+        ----------
+        coords:coords of lane that haven't been corrected
+        Return:
+        ----------
+        coords:coords of lane that have been corrected
+        """
+        return coords
+    def KeepCenter(self,img,left,right,arr_end_coor):
+        """
+        Arguments:
+        ----------
+        left:The left lane coords
+        right:The right lane coords
+        arr_end_coor: the start of the arrow
+        Return:
+        ----------
+        img:image that is added CenterPoint and KeepCenter Message
         """
         
         #把你的程式碼加在這裡
         center_coor = int(1280/2-1)
-        img = cv2.circle(img, (center_coor,720-10), 4, (0,0,255), -2)
+        cv2.circle(img, (center_coor,720-10), 5, (0,0,255), -2)
+        cv2.line(img,(center_coor,710),(center_coor,650),(255,0,255),3)
+        cv2.line(img,(center_coor,arr_end_coor[1]),arr_end_coor,(0,0,255),2)
         if right[0] == -1 or left[0]==-1:  
             return img
-        
+        """
         right = np.array(right[1])
         left = np.array(left[1])
         
@@ -505,6 +510,15 @@ class TuSimple_Demo():
         lane_center  = right[idx_r,0] +  left[idx_l,0]
         
         lane_center = lane_center//2
+        
+        if lane_center - center_coor > 10:
+            flag = 'KeepRight'
+        elif lane_center - center_coor < -10:
+            flag = 'KeepLeft'
+        else:
+            flag = 'In the center'
+        """
+        lane_center = arr_end_coor[0]
         if lane_center - center_coor > 10:
             flag = 'KeepRight'
         elif lane_center - center_coor < -10:
@@ -512,6 +526,7 @@ class TuSimple_Demo():
         else:
             flag = 'In the center'
 
+        #flag is KeepCenter Message
         if flag is 'KeepRight':
             cv2.arrowedLine(img,(10,30),(70,30),(255,255,255),3,tipLength=0.5)
         elif flag is 'KeepLeft':
