@@ -15,7 +15,8 @@ import numpy as np
 #import cv2
 import torchvision
 import lib.utils_resa.transforms as tf
-
+from lib.Panel.DrivingAssist import DrivingAssistant
+from lib.Panel.LaneCorrect import LaneCorrector
 def split_path(path):
     """split path tree into list"""
     folders = []
@@ -321,8 +322,9 @@ class TuSimple_Demo():
         coords 是預測出來的線條，他的格式和tusimple的lanes一樣
         """
 
+        Self_Correction_System = LaneCorrector(coords)#Salmon's code, add anonther arguments if you need
+        coords = Self_Correction_System.Salmon_Fliter()# Salmon' code is written here
 
-        coords = self.SelfCorrection(coords)
         center_x = 1280/2
         leftlane_starndar = 1280/2
         coord_index = 0
@@ -408,66 +410,18 @@ class TuSimple_Demo():
             color_index += 1
             lane_index += 1
         
-        """
-        這裡是畫箭頭的程式，看你要不要順便把它改成彎曲的箭頭
-        right[1] = 車道線的座標們
-        right[1][i][0] = 第i個點的x座標
-        right[1][i][1] = 第i個點的y座標
-        第一個點的y座標是160 依序下去為170 180 ...跟H_sample一樣
-        left同理
 
-        看你要不要改這邊 這邊是車道上的箭頭
-
-        很醜
-
-        """       
-        h_sample = [160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710]
-        y_sample = [i for i in range(56)]
-        arr_start = 0
-        arr_end = 0
-        for i in y_sample:
-            if left[1][i][0] >0 and right[1][i][0] >0 :
-                arr_start = i
-                break
-            
-        #print("arr_start",arr_start)
-        y_sample = [i for i in range(55,-1,-1)]
-        #print(y_sample)
-        for i in y_sample:
-            if left[1][i][0] >0 and right[1][i][0] >0 :
-                arr_end = i
-                break
-        if h_sample[arr_end]>650:
-            arr_end = h_sample.index(650)
-        if h_sample[arr_start]<200:
-            arr_start = h_sample.index(250)
-        #print("arr_end",arr_end)
-        arr_start_x = (right[1][arr_start][0]+left[1][arr_start][0])/2
-        arr_end_x = (right[1][arr_end][0]+left[1][arr_end][0])/2
-        #arr_start_x是
-    
-        cv2.arrowedLine(img,(int(arr_end_x),h_sample[arr_end]),(int(arr_start_x),h_sample[arr_start]),(255,255,255),3)
-        #車道中間點
-        #箭頭尾端
-        arr_end_coor = (int(arr_end_x),h_sample[arr_end])
-        cv2.circle(img,arr_end_coor,4,(255,0,0),-2)
         #arr_end_x 是箭頭的最底下的部分的x座標 arr_start_x是箭頭尖端的x座標
-        
+        assistant = DrivingAssistant(img)
+        arr_end_coor = assistant.CenterArrowedLine(left,right)
+        assistant.KeepCenter(left,right,arr_end_coor)
 
-        """
-        if not os.path.exists(osp.dirname(file_path)):
-            os.makedirs(osp.dirname(file_path))
-            img_save_name = os.path.join(file_path, image_name)
-            print("save dir = ",img_save_name)
-        """
-        
-        img = self.KeepCenter(img,left,right,arr_end_coor)#把你的程式碼加在這裡
 
 
         #print(img_save_name)
         if type(image_path) == type("string"):
             cv2.imwrite(image_path,img)
-        return img
+        return assistant.road_image
     def SelfCorrection(self,coords):
         """
         Arguments:
@@ -494,7 +448,7 @@ class TuSimple_Demo():
         center_coor = int(1280/2-1)
         cv2.circle(img, (center_coor,720-10), 5, (0,0,255), -2)
         cv2.line(img,(center_coor,710),(center_coor,650),(255,0,255),3)
-        cv2.line(img,(center_coor,arr_end_coor[1]),arr_end_coor,(0,0,255),2)
+        cv2.line(img,(center_coor,710),arr_end_coor,(0,0,255),2)
         if right[0] == -1 or left[0]==-1:  
             return img
         """

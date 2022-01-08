@@ -56,8 +56,8 @@ img_width = 640
 cut_height = 160
 seg_label = "seg_label"
 
-dataset_path = './data/6_8_11'
-test_json_file = './data/6_8_11/test_label.json'
+dataset_path = './data/zoo'
+test_json_file = './data/zoo/test_label.json'
 
 dataset = dict(
     train=dict(
@@ -86,7 +86,7 @@ batch_size = 1
 workers = 0
 num_classes = 6 + 1
 ignore_label = 255
-epochs = 15
+epochs = 30
 log_interval = 100
 eval_ep = 1
 save_ep = epochs

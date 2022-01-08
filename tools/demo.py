@@ -34,7 +34,8 @@ from lib.dataset.datasets_resa import build_dataloader
 from lib.utils_resa.config import Config
 
 from lib.runner.demo_runner import DemoString
-
+from lib.Panel.DrivingAssist import *
+from lib.Panel.LaneCorrect import *
 normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
@@ -68,7 +69,8 @@ def detect(cfg,opt):
     cudnn.fastest = True
 
     
-   
+    a = DrivingAssistant(0)
+
 
 
    
